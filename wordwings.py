@@ -617,5 +617,3 @@ window.mainloop()
 
 
 
-
-***REMOVED***
