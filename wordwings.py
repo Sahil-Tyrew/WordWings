@@ -4,6 +4,7 @@ import os
 import logging
 import time
 import threading
+import json
 
 import tkinter as tk
 from tkinter import scrolledtext, ttk, Label, PhotoImage, filedialog, messagebox, END
@@ -65,6 +66,7 @@ this approach ensures that the API key is retrieved fresh each time the function
 
 def simplify_text_with_ai(text):
     api_key = os.getenv("OPENAI_API_KEY")
+    print(f"[DEBUG] OPENAI_API_KEY = {api_key!r}")
     if not api_key:
         logging.error("OpenAI API Key not found in environment variables.")
         return text  # Fallback to rule-based if key is missing
@@ -88,18 +90,22 @@ def simplify_text_with_ai(text):
 
 
 # Simple dictionary for word replacement
-SIMPLE_WORDS = {
-    "inability": "trouble",
-    "comprehend": "understand",
-    "complicated": "hard",
-    "inhibiting": "stopping",
-    "academic": "school",
-    "progress": "learning",
-    "utilize": "use",
-    "demonstrate": "show",
-    "approximately": "about",
-    "significant": "big"
-}
+SIMPLE_WORDS_FILE = "simple_words.json"
+def load_simple_words():
+    try:
+        with open(SIMPLE_WORDS_FILE, "r") as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        # if file’s missing or invalid, start with an empty dict
+        return {}
+    
+# Function in the case user wants to overwrite from code:
+def save_simple_words(d):
+    with open(SIMPLE_WORDS_FILE, "w") as f:
+        json.dump(d, f, indent=2)
+
+#load it to SIMPLE_WORDS
+SIMPLE_WORDS = load_simple_words()
 
     # Function to simplify text WITHOUT AI
 def simplify_text(text):
@@ -471,6 +477,7 @@ Then the extracted text is pastedd into the GUI
 
 
 # 6. -------------------------------- GUI Setup and Main Loop -----------------------------------
+
 
 # Set up the GUI window
 window = tk.Tk()
