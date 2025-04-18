@@ -3,13 +3,24 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 import os
-from wordwings import simplify_text, simplify_text_with_ai, chunk_text, image_to_text
+from wordwings_core import simplify_text, simplify_text_with_ai, chunk_text, image_to_text
+
+print(">>> backend.py starting up")
+
 
 app = Flask(__name__)
 CORS(app)  # Enable Cross-Origin Resource Sharing
 
 app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd(), 'uploads')
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+
+#for testing on basic connectivity 
+@app.route('/ping', methods=['GET'])
+def ping():
+    print(">>> /ping called")
+    return jsonify({'pong': True})
+
 
 @app.route('/simplify', methods=['POST'])
 def simplify():
@@ -19,12 +30,14 @@ def simplify():
     if not text:
         return jsonify({'error': 'No text provided'}), 400
     
-    if use_ai:
-        simplified = simplify_text_with_ai(text)
-    else:
-        simplified = simplify_text(text)
-    
-    return jsonify({'simplified': simplified})
+    try:
+        simplified = ( simplify_text_with_ai(text)
+                       if data.get('use_ai') else
+                       simplify_text(text) )
+        return jsonify({'simplified': simplified})
+    except Exception as e:
+        app.logger.exception("Error processing /simplify")
+        return jsonify({'error': 'Server error during simplification'}), 500
 
 @app.route('/chunk', methods=['POST'])
 def chunk():
@@ -32,8 +45,14 @@ def chunk():
     text = data.get('text', '')
     if not text:
         return jsonify({'error': 'No text provided'}), 400
-    chunked = chunk_text(text)
-    return jsonify({'chunked': chunked})
+    try:
+        chunked = chunk_text(text)
+        return jsonify({'chunked': chunked})
+    except Exception as e:
+        #real error for your debugging
+        app.logger.exception("Error processing /chunk")
+        # Return a JSON error so the extension can handle it
+        return jsonify({'error': 'Server error during chunking'}), 500
 
 @app.route('/ocr', methods=['POST'])
 def ocr():
@@ -56,5 +75,13 @@ def ocr():
     
     return jsonify({'extracted': extracted})
 
+
+
+
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5001, debug=True)
+
+
+
+
