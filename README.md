@@ -89,31 +89,31 @@ Usage:
 
     Desktop App:
 
-    python wordwings.py - in the terminal or code app that is being used - i.e. Visual Studio Code
+    python wordwings.py OR wordwings_app.py - in the terminal or code app that is being used - i.e. Visual Studio Code
 
-            Enter or paste text into the main text box.
+            1. Enter or paste text into the main text box.
 
-            Click Simplify Text for rule-based simplification, or check Use AI Simplification and click again to use GPT-3.5.
+            2. Click Simplify Text for rule-based simplification, or check Use AI Simplification and click again to use GPT-3.5.
 
-            Click Split Text to break long paragraphs into manageable chunks.
+            3. Click Split Text to break long paragraphs into manageable chunks.
 
-            Click Read Aloud to hear the text with word-by-word highlighting.
+            4. Click Read Aloud to hear the text with word-by-word highlighting.
 
-            Use Start Voice Recording / Stop Voice Recording and say “simplify” or “read” to control actions by voice.
+            5. Use Start Voice Recording / Stop Voice Recording and say “simplify” or “read” to control actions by voice.
 
-            Click Extract Text from Image to select an image or PDF and load its text via OCR.
+            6. Click Extract Text from Image to select an image or PDF and load its text via OCR.
 
     Chrome Extension:
 
-        Navigate to chrome://extensions in your browser.
+        1. Navigate to chrome://extensions in your browser.
 
-        Enable Developer mode.
+        2. Enable Developer mode.
 
-        Click Load unpacked and select the chrome_extension folder.
+        3. Click Load unpacked and select the chrome_extension folder.
 
-        Highlight text on any webpage and click the extension to simplify or read aloud.
+        4. Highlight text on any webpage and click the extension to simplify or read aloud.
 
-        Ensure your backend is running locally if connected to Python APIs.
+        5. Ensure your backend is running locally if connected to Python APIs.
 
 
 Configuration:
