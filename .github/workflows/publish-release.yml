@@ -1,0 +1,67 @@
+name: Publish Release Assets
+
+on:
+  workflow_run:
+    workflows: ["Windows Packaging", "Linux Packaging"]
+    types:
+      - completed
+
+permissions:
+  contents: write   # grant rights to create releases and upload assets
+
+jobs:
+  publish:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # If you need to rebuild or copy artifacts, do it here. Example:
+      - name: Prepare release assets
+        run: |
+          cp dist/WordWings.app WordWings-mac.dmg || true
+          cp WordWingsSetup.exe WordWings-windows.exe || true
+          cp wordwings_1.0.0_amd64.deb WordWings-linux.deb || true
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        with:
+          tag_name: v1.0.0
+          release_name: WordWings v1.0.0
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload macOS DMG
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./WordWings-mac.dmg
+          asset_name: WordWings-mac.dmg
+          asset_content_type: application/octet-stream
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Windows EXE
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./WordWings-windows.exe
+          asset_name: WordWings-windows.exe
+          asset_content_type: application/octet-stream
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Linux DEB
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./WordWings-linux.deb
+          asset_name: WordWings-linux.deb
+          asset_content_type: application/vnd.debian.binary-package
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
