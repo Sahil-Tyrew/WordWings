@@ -50,8 +50,4 @@ jobs:
         shell: cmd
         run: '"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\WordWings.iss'
 
-      - name: Upload installer artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: WordWings-Windows-Installer
-          path: WordWings-Setup.exe
+
