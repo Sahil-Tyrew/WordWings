@@ -1,36 +1,46 @@
 name: Publish Release Assets
 
+# Trigger on tag push (e.g. git tag v1.0.0; git push --tags)
 on:
-  workflow_run:
-    workflows: ["Windows Packaging", "Linux Packaging"]
-    types:
-      - completed
+  push:
+    tags:
+      - 'v*.*.*'
 
 permissions:
-  contents: write   # grant rights to create releases and upload assets
+  contents: write   # allows create-release and upload-release-asset
 
 jobs:
-  publish:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
-    runs-on: ubuntu-latest
-
+  build-macos:
+    name: Build macOS DMG & Create Release
+    runs-on: macos-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # If you need to rebuild or copy artifacts, do it here. Example:
-      - name: Prepare release assets
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
         run: |
-          cp dist/WordWings.app WordWings-mac.dmg || true
-          cp WordWingsSetup.exe WordWings-windows.exe || true
-          cp wordwings_1.0.0_amd64.deb WordWings-linux.deb || true
+          pip install --upgrade pip
+          pip install -r requirements.txt pyinstaller
+
+      - name: Build .app bundle
+        run: pyinstaller WordWings.spec
+
+      - name: Create DMG
+        run: hdiutil create -ov -srcfolder dist/WordWings.app -format UDZO -volname "WordWings" WordWings-mac.dmg
 
       - name: Create GitHub Release
         id: create_release
         uses: actions/create-release@v1
         with:
-          tag_name: v1.0.0
-          release_name: WordWings v1.0.0
+          tag_name: ${{ github.ref_name }}
+          release_name: ${{ github.ref_name }}
           draft: false
           prerelease: false
         env:
@@ -40,28 +50,82 @@ jobs:
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./WordWings-mac.dmg
+          asset_path: WordWings-mac.dmg
           asset_name: WordWings-mac.dmg
           asset_content_type: application/octet-stream
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  build-windows:
+    name: Build Windows EXE & Installer
+    needs: build-macos
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pyinstaller
+
+      - name: Build EXE
+        shell: cmd
+        run: pyinstaller --onefile --windowed --name WordWings --add-data "scientiae_logo.png;." --add-data "simple_words.json;." --add-data "config.ini;." wordwings_app.py
+
+      - name: Install Inno Setup
+        run: choco install innosetup.install -y
+
+      - name: Compile installer
+        shell: cmd
+        run: '"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\WordWings.iss'
+
       - name: Upload Windows EXE
         uses: actions/upload-release-asset@v1
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./WordWings-windows.exe
-          asset_name: WordWings-windows.exe
+          upload_url: ${{ needs.build-macos.outputs.upload_url }}
+          asset_path: dist\\WordWings.exe
+          asset_name: WordWings.exe
           asset_content_type: application/octet-stream
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  build-linux:
+    name: Build Linux DEB & Upload
+    needs: build-macos
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install FPM and dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ruby ruby-dev build-essential
+          sudo gem install --no-document fpm
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pyinstaller
+
+      - name: Build standalone binary
+        run: pyinstaller --onefile --name WordWings wordwings_app.py
+
+      - name: Package .deb
+        run: |
+          mkdir -p pkg/opt/wordwings
+          cp dist/WordWings pkg/opt/wordwings/WordWings
+          fpm -s dir -t deb -n wordwings -v "${{ github.ref_name }}" --prefix /opt/wordwings pkg/opt/wordwings
+
       - name: Upload Linux DEB
         uses: actions/upload-release-asset@v1
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./WordWings-linux.deb
-          asset_name: WordWings-linux.deb
+          upload_url: ${{ needs.build-macos.outputs.upload_url }}
+          asset_path: wordwings_${{ github.ref_name }}_amd64.deb
+          asset_name: wordwings_${{ github.ref_name }}_amd64.deb
           asset_content_type: application/vnd.debian.binary-package
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
