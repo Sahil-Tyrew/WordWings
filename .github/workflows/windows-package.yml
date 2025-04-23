@@ -1,6 +1,6 @@
 permissions:
   contents: read
-  artifacts: write
+  actions: write
 
 name: Windows Packaging
 
