@@ -45,8 +45,4 @@ jobs:
             --license MIT \
             pkg/opt/wordwings
 
-      - name: Upload .deb artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: WordWings-deb
-          path: wordwings_1.0.0_amd64.deb
+
