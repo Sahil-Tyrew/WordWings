@@ -2,9 +2,11 @@ name: Windows Packaging
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
 
 jobs:
   build-installer:
@@ -17,7 +19,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: 3.11
+          python-version: '3.11'
 
       - name: Install dependencies
         run: |
@@ -36,9 +38,9 @@ jobs:
       - name: Install Inno Setup
         run: choco install innosetup.install -y
 
-      - name: Verify ISCC location
+      - name: Verify Inno Setup installation
         shell: cmd
-        run: dir "C:\Program Files*\Inno Setup*"
+        run: dir "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
 
       - name: Compile installer
         shell: cmd
