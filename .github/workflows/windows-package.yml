@@ -1,17 +1,23 @@
 name: Windows Packaging
+
 on:
-  push: { branches: [ main ] }
-  pull_request: { branches: [ main ] }
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
   build-installer:
     runs-on: windows-latest
+
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
       - name: Set up Python
         uses: actions/setup-python@v4
-        with: python-version: '3.11'
+        with:
+          python-version: 3.11
 
       - name: Install dependencies
         run: |
@@ -20,20 +26,25 @@ jobs:
 
       - name: Build EXE
         shell: cmd
-        run: pyinstaller --onefile --windowed --name WordWings --add-data "scientiae_logo.png;." --add-data "simple_words.json;." --add-data "config.ini;." wordwings_app.py
+        run: |
+          pyinstaller --onefile --windowed --name WordWings ^
+            --add-data "scientiae_logo.png;." ^
+            --add-data "simple_words.json;." ^
+            --add-data "config.ini;." ^
+            wordwings_app.py
 
       - name: Install Inno Setup
         run: choco install innosetup.install -y
 
       - name: Verify ISCC location
         shell: cmd
-        run: dir "C:\\Program Files*\\Inno Setup*"
+        run: dir "C:\Program Files*\Inno Setup*"
 
       - name: Compile installer
         shell: cmd
-        run: "\"C:\\Program Files (x86)\\Inno Setup 6\\ISCC.exe\" installer\\WordWings.iss"
+        run: '"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\WordWings.iss'
 
-      - name: Upload installer
+      - name: Upload installer artifact
         uses: actions/upload-artifact@v3
         with:
           name: WordWings-Windows-Installer
