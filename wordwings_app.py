@@ -1,7 +1,7 @@
 #wordwings_app
 
 #1 ------- Imports First: -----------------------------------------------------------------
-
+import sys
 import os
 import logging
 import time
@@ -36,6 +36,14 @@ import speech_recognition as sr
 # Download necessary NLTK data
 nltk.download('punkt')
 nltk.download('wordnet')
+
+
+def resource_path(rel_path):
+    # If we're frozen by PyInstaller, files live in sys._MEIPASS
+    base = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base, rel_path)
+
+
 
 #2. ------ Global Initialization ------------------
 
@@ -255,9 +263,16 @@ tk.Frame(window,bg="#f0f8ff").pack(expand=True,fill="both")
 # Logo + tagline
 lf=tk.Frame(window,bg="#f0f8ff"); lf.pack(pady=20)
 try:
-    img=Image.open("scientiae_logo.png").resize((200,100),Image.Resampling.LANCZOS)
-    ph=ImageTk.PhotoImage(img); lbl=Label(lf,image=ph,bg="#f0f8ff"); lbl.image=ph; lbl.pack()
-except: pass
+    logo_file = resource_path("scientiae_logo.png")
+    img = Image.open(logo_file).resize((200,100), Image.Resampling.LANCZOS)
+    ph = ImageTk.PhotoImage(img)
+    lbl = Label(lf, image=ph, bg="#f0f8ff")
+    lbl.image = ph
+    lbl.pack()
+except Exception as e:
+    print("Failed to load logo:", e)
+
+
 Label(lf,text="Empowering Readers, One Word at a Time",font=("Arial",14,"italic"),bg="#f0f8ff").pack(pady=5)
 # Instruction
 Label(window,text="Enter text below:",font=("Arial",12),bg="#f0f8ff").pack()

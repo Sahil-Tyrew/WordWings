@@ -1,17 +1,24 @@
+permissions:
+  contents: read
+  actions: write
+
 name: Windows Packaging
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
 
 jobs:
   build-installer:
     runs-on: windows-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -24,21 +31,23 @@ jobs:
           pip install -r requirements.txt pyinstaller
 
       - name: Build EXE
+        shell: cmd
         run: |
-          pyinstaller --onefile --windowed --name WordWings `
-            --add-data "scientiae_logo.png;." `
-            --add-data "simple_words.json;." `
-            --add-data "config.ini;." `
+          pyinstaller --onefile --windowed --name WordWings ^
+            --add-data "scientiae_logo.png;." ^
+            --add-data "simple_words.json;." ^
+            --add-data "config.ini;." ^
             wordwings_app.py
 
       - name: Install Inno Setup
-        run: choco install innosetup -y
+        run: choco install innosetup.install -y
+
+      - name: Verify Inno Setup installation
+        shell: cmd
+        run: dir "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
 
       - name: Compile installer
+        shell: cmd
         run: '"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\WordWings.iss'
 
-      - name: Upload installer
-        uses: actions/upload-artifact@v3
-        with:
-          name: WordWings-Windows-Installer
-          path: WordWings-Setup.exe
+
