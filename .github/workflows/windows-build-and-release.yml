@@ -10,14 +10,17 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - name: Check out code
+      # 1. Checkout your code
+      - name: Checkout code
         uses: actions/checkout@v3
 
+      # 2. Install Python 3.11
       - name: Set up Python 3.11
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
 
+      # 3. Install pip + project deps
       - name: Install Python dependencies
         shell: pwsh
         run: |
@@ -25,17 +28,23 @@ jobs:
           pip install pyinstaller
           pip install -r requirements.txt
 
+      # 4. Build the standalone EXE
       - name: Build standalone EXE
         shell: pwsh
         run: |
           pyinstaller --onefile --windowed --add-data "config.ini;." --name WordWings wordwings.py
 
-      - name: Install Inno Setup
+      # 5. Download & silently unpack the portable Inno Setup installer
+      - name: Install Inno Setup (portable)
         shell: pwsh
         run: |
-          choco install innosetup -y      # correct package name
+          $url = 'https://jrsoftware.org/download.php/is-unicode-portable.exe'
+          Invoke-WebRequest $url -OutFile 'innosetup-portable.exe'
+          Start-Process .\innosetup-portable.exe `
+            -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/DIR=C:\InnoSetup' -Wait
 
-      - name: Generate Inno Setup script
+      # 6. Generate the Inno Setup script via PowerShell here-string
+      - name: Generate installer.iss
         shell: pwsh
         run: |
           $iss = @'
@@ -61,11 +70,13 @@ Filename: "{app}\WordWings.exe"; Description: "Launch WordWings"; Flags: nowait 
 '@
           $iss | Set-Content installer.iss -Encoding ASCII
 
+      # 7. Compile the NSIS installer using ISCC.exe from the portable install
       - name: Compile Windows installer
         shell: pwsh
         run: |
-          & 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe' installer.iss
+          & 'C:\InnoSetup\ISCC.exe' installer.iss
 
+      # 8. Publish a GitHub Release with all three assets
       - name: Publish Release & Upload Assets
         uses: softprops/action-gh-release@v1
         with:
