@@ -10,32 +10,40 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - name: Check out code
+      # 1. Check out your code
+      - name: Checkout code
         uses: actions/checkout@v3
 
+      # 2. Install Python 3.11
       - name: Set up Python 3.11
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
 
+      # 3. Install pip + project dependencies
       - name: Install Python dependencies
+        shell: pwsh
         run: |
           python -m pip install --upgrade pip
           pip install pyinstaller
           pip install -r requirements.txt
 
+      # 4. Build the standalone EXE
       - name: Build standalone EXE
-        shell: bash
-        run: pyinstaller --onefile --windowed --add-data "config.ini;." --name WordWings wordwings.py
-
-      - name: Install Inno Setup
-        run: choco install innosetup -y
-
-      - name: Write Inno Setup script
         shell: pwsh
         run: |
-          # Use a PowerShell here-string to generate installer.iss
-          $iss = @'
+          pyinstaller --onefile --windowed --add-data 'config.ini;.' --name WordWings wordwings.py
+
+      # 5. Install Inno Setup via Chocolatey
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup -y
+
+      # 6. Generate the Inno Setup script (installer.iss) via a PowerShell here‐string
+      - name: Generate Inno Setup script
+        shell: pwsh
+        run: |
+          $script = @'
 [Setup]
 AppName=WordWings
 AppVersion=${{ github.ref_name }}
@@ -56,13 +64,16 @@ Name: "{commondesktop}\WordWings"; Filename: "{app}\WordWings.exe"
 [Run]
 Filename: "{app}\WordWings.exe"; Description: "Launch WordWings"; Flags: nowait postinstall skipifsilent
 '@
-          $iss | Out-File -FilePath installer.iss -Encoding ASCII
+          # Write out the ISS file with ASCII encoding:
+          $script | Set-Content installer.iss -Encoding ASCII
 
+      # 7. Compile the NSIS installer
       - name: Compile Windows installer
         shell: pwsh
         run: |
           & 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe' installer.iss
 
+      # 8. Publish a GitHub Release with your assets
       - name: Publish Release & Upload Assets
         uses: softprops/action-gh-release@v1
         with:
