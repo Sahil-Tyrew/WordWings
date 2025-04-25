@@ -1,0 +1,78 @@
+name: Build & Release Windows Installer
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'     # triggers on tags like v1.0.0
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller
+          pip install -r requirements.txt
+
+      - name: Build standalone EXE
+        run: |
+          pyinstaller --onefile --windowed --add-data "config.ini;." \
+                      --name WordWings wordwings.py
+
+      - name: Install NSIS
+        run: |
+          choco install -y nsis
+
+      - name: Create Windows installer
+        run: |
+          # prepare script
+          echo '[Setup]'                       > installer.iss
+          echo 'AppName=WordWings'            >> installer.iss
+          echo 'AppVersion=${{ github.ref_name }}' >> installer.iss
+          echo 'DefaultDirName={pf}\WordWings'>> installer.iss
+          echo 'OutputDir=.'                  >> installer.iss
+          echo 'OutputBaseFilename=WordWingsSetup' >> installer.iss
+          echo '[Files]'                      >> installer.iss
+          echo 'Source: "dist\\WordWings.exe"; DestDir: "{app}"' >> installer.iss
+          echo '[Icons]'                      >> installer.iss
+          echo 'Name: "{group}\WordWings"; Filename: "{app}\WordWings.exe"' >> installer.iss
+          echo 'Name: "{commondesktop}\WordWings"; Filename: "{app}\WordWings.exe"' >> installer.iss
+          echo '[Run]'                        >> installer.iss
+          echo 'Filename: "{app}\WordWings.exe"; Description: "Launch WordWings"; Flags: nowait postinstall skipifsilent' >> installer.iss
+
+          makensis installer.iss
+
+      - name: Create GitHub Release
+        id: release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload EXE installer to Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: WordWingsSetup-${{ github.ref_name }}.exe
+          asset_path: WordWingsSetup.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload standalone EXE to Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: WordWings-${{ github.ref_name }}.exe
+          asset_path: dist/WordWings.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
