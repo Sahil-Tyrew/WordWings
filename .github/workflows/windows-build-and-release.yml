@@ -25,6 +25,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Build standalone EXE
+        shell: bash
         run: |
           pyinstaller --onefile --windowed --add-data "config.ini;." --name WordWings wordwings.py
 
@@ -57,7 +58,7 @@ jobs:
 
       - name: Compile Windows installer
         run: |
-          "C:\\Program Files (x86)\\Inno Setup 6\\ISCC.exe" installer.iss
+          "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
 
       - name: Publish Release & Upload Assets
         uses: softprops/action-gh-release@v1
