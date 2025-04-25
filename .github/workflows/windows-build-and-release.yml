@@ -10,11 +10,9 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - name: Check out code
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v4
+      - uses: actions/setup-python@v4
         with:
           python-version: '3.11'
 
@@ -56,8 +54,7 @@ jobs:
           EOF
 
       - name: Compile Windows installer
-        run: |
-          & 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe' installer.iss
+        run: '"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss'
 
       - name: Publish Release & Upload Assets
         uses: softprops/action-gh-release@v1
