@@ -7,7 +7,6 @@ on:
 
 jobs:
   build-installer:
-    name: Build Windows EXE & Installer
     runs-on: windows-latest
 
     steps:
@@ -26,19 +25,11 @@ jobs:
           pip install -r requirements.txt
 
       - name: Build standalone EXE
-        # Force this step to use Bash so backslash continuations work
-        shell: bash
         run: |
-          pyinstaller \
-            --onefile \
-            --windowed \
-            --add-data "config.ini;." \
-            --name WordWings \
-            wordwings.py
+          pyinstaller --onefile --windowed --add-data "config.ini;." --name WordWings wordwings.py
 
       - name: Install Inno Setup
-        run: |
-          choco install innosetup -y
+        run: choco install innosetup -y
 
       - name: Write Inno Setup script
         run: |
@@ -76,5 +67,6 @@ jobs:
           files: |
             dist/WordWings.exe
             WordWingsSetup.exe
+            WordWings-final.dmg
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
