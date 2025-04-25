@@ -10,9 +10,11 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Check out code
+        uses: actions/checkout@v3
 
-      - uses: actions/setup-python@v4
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
         with:
           python-version: '3.11'
 
@@ -30,31 +32,36 @@ jobs:
         run: choco install innosetup -y
 
       - name: Write Inno Setup script
+        shell: pwsh
         run: |
-          cat << 'EOF' > installer.iss
-          [Setup]
-          AppName=WordWings
-          AppVersion=${{ github.ref_name }}
-          DefaultDirName={pf}\WordWings
-          DefaultGroupName=WordWings
-          OutputDir=.
-          OutputBaseFilename=WordWingsSetup
-          Compression=lzma
-          SolidCompression=yes
+          # Use a PowerShell here-string to generate installer.iss
+          $iss = @'
+[Setup]
+AppName=WordWings
+AppVersion=${{ github.ref_name }}
+DefaultDirName={pf}\WordWings
+DefaultGroupName=WordWings
+OutputDir=.
+OutputBaseFilename=WordWingsSetup
+Compression=lzma
+SolidCompression=yes
 
-          [Files]
-          Source: "dist\\WordWings.exe"; DestDir: "{app}"; Flags: ignoreversion
+[Files]
+Source: "dist\WordWings.exe"; DestDir: "{app}"; Flags: ignoreversion
 
-          [Icons]
-          Name: "{group}\\WordWings"; Filename: "{app}\\WordWings.exe"
-          Name: "{commondesktop}\\WordWings"; Filename: "{app}\\WordWings.exe"
+[Icons]
+Name: "{group}\WordWings"; Filename: "{app}\WordWings.exe"
+Name: "{commondesktop}\WordWings"; Filename: "{app}\WordWings.exe"
 
-          [Run]
-          Filename: "{app}\\WordWings.exe"; Description: "Launch WordWings"; Flags: nowait postinstall skipifsilent
-          EOF
+[Run]
+Filename: "{app}\WordWings.exe"; Description: "Launch WordWings"; Flags: nowait postinstall skipifsilent
+'@
+          $iss | Out-File -FilePath installer.iss -Encoding ASCII
 
       - name: Compile Windows installer
-        run: '"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss'
+        shell: pwsh
+        run: |
+          & 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe' installer.iss
 
       - name: Publish Release & Upload Assets
         uses: softprops/action-gh-release@v1
